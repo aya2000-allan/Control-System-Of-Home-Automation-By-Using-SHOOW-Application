@@ -1,0 +1,479 @@
+asm volatile ("  jmp 0");
+#include <LiquidCrystal.h>
+#include <LiquidCrystal_PCF8574.h>
+#include <DHT.h>;
+#include <file1.h>;
+
+LiquidCrystal_PCF8574 lcd(0x27);
+
+#define gas_sensor A0
+#define rain_sensor A1
+#define an_irr_sensor A2
+#define flow_water 2
+#define tank_sensor 3
+#define irrigation_sensor 4
+#define buzzer 6
+#define relay_pump 7
+#define led_light 12
+#define DHTPIN 8 
+#define DHTTYPE DHT22
+
+unsigned int flowCount;
+float volume,gasConcentration,rain_sensorConcentration,flowRate,EPvol;
+int x=0,y=0,t=0,h=0,z=0,w=0,g=0,L=0,B=0,counter=0,address=0,ck=1,gasSensorValue,rain_sensorValue;
+char incom=' '; 
+
+DHT dht(DHTPIN,DHTTYPE);
+
+void setup()
+     {
+      pinMode(flow_water,INPUT);
+      pinMode(tank_sensor,INPUT); 
+      pinMode(irrigation_sensor,INPUT); 
+
+      pinMode(buzzer,OUTPUT);
+      pinMode(relay_pump,OUTPUT);
+      pinMode(led_light,OUTPUT);
+      
+      digitalWrite(buzzer,LOW);
+      digitalWrite(relay_pump,HIGH);
+      digitalWrite(led_light,LOW);
+
+      ck=1;
+      dptyn.put(address,ck);
+      
+      delay(500);
+
+      lcd.setBacklight(255);
+      lcd.home(); 
+      lcd.clear();
+      lcd.begin(16,2);
+
+      Serial.begin(11500);
+      
+      welcom();
+
+      dht.begin();     
+      res(); 
+                 
+      screen();
+      res();
+     }
+
+void welcom()
+     {
+      lcd.setBacklight(255);
+      lcd.home(); 
+      lcd.clear();
+      lcd.begin(16,2);
+      delay(1000);
+      
+      lcd.setCursor(2,0);
+      lcd.print("HELLO SHOOW");
+      Serial.print(F("HSHOOW")); 
+      Serial.println();
+      delay(5000);
+  
+      lcd.home();
+      lcd.clear();
+      lcd.setCursor(0,0);
+
+      lcd.print("BAYAN & AYA &");
+      lcd.setCursor(0,1);
+      lcd.print("SHATHA"); 
+      for(x=0;x<=15;x++)
+         {
+          lcd.scrollDisplayRight();
+          delay(700);
+         }
+      for(y=0;y<=15;y++)
+         {
+          lcd.scrollDisplayLeft();
+          delay(700);
+         }
+      x=0;
+      y=0;
+      delay(3000); 
+      lcd.home();
+      lcd.clear();      
+     } 
+
+void res()
+     {
+      digitalWrite(relay_pump,HIGH);
+      Serial.print(F("stats")); 
+      Serial.println();
+      digitalWrite(led_light,LOW);
+      Serial.print(F("statlf")); 
+      Serial.println();     
+      delay(500);
+      Serial.print(F("erc")); 
+      Serial.println(); 
+      EPvol=dbtyn.get(address+sizeof(ck),EPvol);
+      Serial.print(F("volume="));
+      Serial.print(EPvol);
+      Serial.println();
+      delay(500);           
+     }
+
+void screen()
+     {
+      lcd.setCursor(0,0);
+      lcd.print("TMP=");
+      lcd.setCursor(11,0);
+      lcd.print("T=");
+      
+      lcd.setCursor(0,1);
+      lcd.print("HUM=");    
+     }
+
+void checkPump()
+     {
+     if(digitalRead(relay_pump)==LOW)
+       {      
+        for(counter=0;counter<=40;counter++) 
+           {
+            delay(100);
+            tanke();
+            vol();
+            if(counter==40)
+              {          
+               z=1;        
+              }
+            if((digitalRead(irrigation_sensor)==HIGH)&&(z==1))
+              {              
+               z=0;
+               w=0;
+               counter=0;
+               digitalWrite(relay_pump,HIGH);
+               Serial.print(F("stats")); 
+               Serial.println();
+               emp();
+              }else if((digitalRead(irrigation_sensor)==LOW)&&(digitalRead(relay_pump)==LOW))
+                      {
+                       z=0;
+                       w=0;
+                       counter=0; 
+                       digitalWrite(relay_pump,HIGH);
+                       Serial.println();
+                       vol();
+                     }               
+            }
+        }   
+      }
+
+void emt()
+     {
+      lcd.setBacklight(255);
+      lcd.home(); 
+      lcd.clear();
+      lcd.begin(16,2);
+      lcd.setCursor(0,0);
+      lcd.print("EMPTY WATER TANK");
+      Serial.print(F("ert")); 
+      Serial.println();
+      alarm();  
+     }
+      
+void emp()
+     {
+      lcd.setBacklight(255);
+      lcd.home(); 
+      lcd.clear();
+      lcd.begin(16,2);
+      lcd.setCursor(0,0);
+      lcd.print("PUMP ERROR");
+      Serial.print(F("erp")); 
+      Serial.println();
+      alarm(); 
+     }
+
+void emg()
+     {
+      lcd.setBacklight(255);
+      lcd.home(); 
+      lcd.clear();
+      lcd.begin(16,2);
+      lcd.setCursor(0,0);
+      lcd.print("GAS LEAKAGE");
+      Serial.print(F("gasnot")); 
+      Serial.println();
+      alarm2(); 
+     }
+     
+void alarm2()
+     {
+      lcd.setCursor(0,1);
+      lcd.print("FIX&PRESS RESET");           
+      while(true)
+           {
+            digitalWrite(buzzer,HIGH);                        
+            lcd.setBacklight(255);
+            gasSensorValue=analogRead(gas_sensor);
+            gasConcentration=map(gasSensorValue,0,1023,0,100);
+            Serial.print(F("gase="));
+            Serial.print(gasConcentration);
+            Serial.println();
+            if(gasConcentration>30)
+              {
+               Serial.print(F("gasnot")); 
+               Serial.println();       
+              }           
+            delay(500);
+            digitalWrite(buzzer,LOW);
+            lcd.setBacklight(0);
+            delay(500);
+           }    
+      }
+    
+void alarm()
+     {
+      lcd.setCursor(0,1);
+      lcd.print("FIX&PRESS RESET");       
+      while(true)
+           {
+            digitalWrite(buzzer,HIGH);                        
+            lcd.setBacklight(255);
+            delay(300);
+            digitalWrite(buzzer,LOW);
+            lcd.setBacklight(0);
+            delay(300);
+           }    
+      }
+
+void scan_sens()
+     {     
+      t=dht.readTemperature();
+      lcd.setCursor(5,0);
+      lcd.print(t);
+      lcd.setCursor(8,0);
+      lcd.print("C");
+      Serial.print(F("temperature="));
+      Serial.print(t); 
+      Serial.println();
+
+      h=dht.readHumidity();
+      lcd.setCursor(5,1);
+      lcd.print(h);
+      lcd.setCursor(8,1);
+      lcd.print("%");
+      Serial.print(F("humidity="));
+      Serial.print(h);
+      Serial.println();
+        
+      rain_sensorValue=analogRead(rain_sensor);
+      rain_sensorConcentration=map(rain_sensorValue,0,1023,0,100);
+      if((rain_sensorConcentration>40)&&(g==0))
+        {
+         Serial.print(F("ranse="));
+         Serial.println();
+         g=1;
+        }else if((rain_sensorConcentration<40)&&(g==1))
+                {
+                 g=0;
+                }
+      gasSensorValue=analogRead(gas_sensor);
+      gasConcentration=map(gasSensorValue,0,1023,0,100);
+      Serial.print(gasConcentration);
+      Serial.println();
+      if(gasConcentration>30)
+        {
+         emg();          
+        }
+      delay(500);
+     }
+
+void vol()
+     {
+      if(digitalRead(relay_pump)==LOW)
+        {
+         EPvol=dptyn.get(address+sizeof(ck),EPvol); 
+         flowRate=calcFlowRate();
+         volume+=flowRate;
+         EPvol+=volume;
+         EPvol/=500;
+         dptyn.put(address+sizeof(ck),EPvol);
+         EPvol=dbtyn.get(address+sizeof(ck),EPvol);
+         Serial.print(EPvol);
+         Serial.println();
+         L=0;
+         if(B==1){delay(100);} 
+        }else{
+              if((L==0)&&(digitalRead(relay_pump)==HIGH))
+              {        
+               EPvol=dptyn.get(address+sizeof(ck),EPvol);
+               Serial.print(F("volume="));
+               Serial.print(EPvol);
+               Serial.println();
+               L=1;
+              }              
+             }   
+     }     
+
+float calcFlowRate() 
+    {
+     flowCount= pulseIn(flow_water,HIGH); 
+     return(flowCount/(60.0*7.5));       
+    }
+
+void manual()
+     {                   
+      if(incom=='r')
+        {
+         digitalWrite(relay_pump,LOW);
+         Serial.print(F("statr")); 
+         Serial.println();
+         B=1;
+         vol();
+        }else if(incom=='s')
+                {
+                 digitalWrite(relay_pump,HIGH);
+                 Serial.print(F("stats")); 
+                 Serial.println();
+                 B=0;
+                } 
+      if(digitalRead(relay_pump)==LOW)
+        {      
+         vol();
+        }                      
+      }
+
+void automatic()
+     {      
+      if((digitalRead(tank_sensor)==LOW)&&(digitalRead(irrigation_sensor)==HIGH)&&(digitalRead(relay_pump)==HIGH))
+        {
+         digitalWrite(relay_pump,LOW);
+         Serial.print(F("statr")); 
+         Serial.println();
+         vol();
+         if(w==0)
+           {
+            w=1;
+            checkPump();
+           }
+        }else if((digitalRead(tank_sensor)==HIGH)&&(digitalRead(relay_pump)==LOW))
+                {
+                 digitalWrite(relay_pump,HIGH);
+                 Serial.print(F("stats")); 
+                 Serial.println();
+                 vol();
+                 w=0;
+                 z=0;
+                 counter=0;
+                 tanke();
+                }else if((digitalRead(irrigation_sensor)==LOW)&&(digitalRead(relay_pump)==LOW))
+                        {
+                         digitalWrite(relay_pump,HIGH);
+                         Serial.print(F("stats")); 
+                         Serial.println();
+                         vol();
+                         w=0;
+                         z=0;
+                         counter=0; 
+                        }else{
+                              w=0;
+                              z=0;
+                              counter=0; 
+                              loop();                          
+                              } 
+      }
+
+void tanke()
+     {
+      if(digitalRead(tank_sensor)==HIGH)
+        {
+         lcd.setCursor(13,0);
+         lcd.print("L"); 
+         switch(dptyn.get(address,ck)) 
+               {
+                case 1:
+                       digitalWrite(relay_pump,HIGH); 
+                       emt();
+                break;
+               }                 
+         }       
+     }
+
+void tankc()
+     {
+      if(digitalRead(tank_sensor)==HIGH)
+        {
+         lcd.setCursor(13,0);
+         lcd.print("L");                 
+         }else if(digitalRead(tank_sensor)==LOW)
+                 {
+                  lcd.setCursor(13,0);
+                  lcd.print("H");
+                 }          
+     }     
+
+void mode()
+     {      
+      if(Serial.available()>0) 
+         {
+          incom=Serial.read();
+          Serial.println(incom);
+         
+          switch(incom)
+                {
+                 case'a':
+                         ck=1;
+                         dptyn.put(address,ck);
+                 break;
+                 
+                 case'm':
+                         ck=2;
+                        dptyn.put(address,ck);
+                 break;
+
+                 case'z':
+                         digitalWrite(led_light,HIGH);
+                         Serial.print(F("statln")); 
+                         Serial.println();
+                 break;
+                   
+                 case'q':
+                         digitalWrite(led_light,LOW);
+                         Serial.print(F("statlf")); 
+                         Serial.println();
+                 break;
+
+                 case'p':
+                         EPvol=dptyn.get(address+sizeof(ck),EPvol);
+                         EPvol=0;
+                         volume=0;
+                         flowRate=0;
+                         dptyn.put(address+sizeof(ck),EPvol); 
+                         EPvol=dptyn.get(address+sizeof(ck),EPvol);
+                         Serial.print(F("volume="));
+                         Serial.print(EPvol);
+                         Serial.println();                       
+                 break;
+
+                }                    
+          }
+          
+          switch(dptyn.get(address,ck)) 
+                {
+                  case 1:   
+                         lcd.setCursor(11,1);
+                         lcd.print("AUT");
+                         Serial.println("automatic");
+                         automatic();
+                  break;
+                     
+                  case 2:
+                         lcd.setCursor(11,1);
+                         lcd.print("MAN");
+                         Serial.println("manual");
+                         manual();
+                  break;    
+                }
+     }
+              
+void loop()
+     {
+      scan_sens();                                        
+      tankc();
+      mode();                
+     }
